@@ -66,6 +66,7 @@ def save_csv(parking_data, var_name, dir_name, backup=False):
 def main():
     global s
     # Constant definition
+    log = []
     today = datetime.now(pytz.timezone('Europe/Madrid'))
     DIR_NAME = 'Data'
     varName = 'dataframe' + '_' + str(today.year) + '_' + str(today.month) + '_' + str(today.day)
@@ -76,17 +77,22 @@ def main():
     try:
         s.run()
     except BaseException as e:
-        print('Exception:', e.__class__)
+        print(f'Exception {e.__class__} ocurred while retrieving data')
         # Hay que hacer que los csv vayan a unca carpeta
         # Queda por añadir un if por si me falla a mitad de dia... hacer pruebas con archivo dimmie
         # Hay que añadir a gitignore que no suba los .csv
         save_csv(globals()[varName], varName, DIR_NAME)
         # Re run main() if the error , only exit the program manually
         if issubclass(e.__class__, Exception):
+            log.append(e.__class__)
             main()
+
 
     finally:
         save_csv(globals()[varName], 'last_run_backup', DIR_NAME, backup=True)
+        print('The programm has been interrupted with these exceptions:')
+        for error in log:
+            print(error)
 
 
 if __name__ == '__main__':
