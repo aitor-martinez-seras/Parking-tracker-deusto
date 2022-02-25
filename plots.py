@@ -1,3 +1,4 @@
+'''
 from pandas import DataFrame, read_csv
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -15,11 +16,11 @@ ax.bar( df['Time'],
 ax.set(xlabel="Time",
        ylabel="Parking free slots",
        title="Daily Free Parking Slots")
-'''
+"""
 fig.autofmt_xdate()
 # Use a more precise date string for the x axis locations in the toolbar.
 ax.fmt_xdata = mdates.DateFormatter('%D-%H:%M')
-'''
+"""
 # Define the date format
 time_form = DateFormatter("%H:%M")
 ax.xaxis.set_major_formatter(time_form)
@@ -28,4 +29,4 @@ ax.xaxis.set_major_formatter(time_form)
 ax.xaxis.set_major_locator(mdates.HourLocator(interval=10000))
 
 plt.show()
-
+'''

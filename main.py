@@ -1,4 +1,4 @@
-import os.path
+import os
 import requests
 from bs4 import BeautifulSoup
 import sched, time
@@ -93,7 +93,6 @@ def main():
         print('The programm has been interrupted with these exceptions:')
         for error in log:
             print(error)
-
 
 if __name__ == '__main__':
     main()
