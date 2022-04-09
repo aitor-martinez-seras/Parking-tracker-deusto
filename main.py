@@ -9,6 +9,12 @@ from pandas import DataFrame
 
 # Functions
 def get_general_DBS_parking_free_slots(dataframe, var_name):
+    """
+    
+    :param dataframe: 
+    :param var_name: 
+    :return: 
+    """
     page = requests.get('http://parking.deusto.es/')
     now = datetime.now(pytz.timezone('Europe/Madrid'))
     print(now.time())
@@ -39,41 +45,62 @@ def save_csv(parking_data, var_name, dir_name, backup=False):
         parking_data.to_csv(var_path, sep=';', decimal=',')
         print(f'Backup of the last run saved in {var_name}.csv')
     else:
-        list_existing_today_files = os.listdir(dir_name)
+        list_existing_files = os.listdir(dir_name)
         coincidences = []
         var_path = ''
         string_found = -1
         # Check in the directory if there is a file of the same day already
-        for item in list_existing_today_files:
+        for item in list_existing_files:
             string_found = int(item.rfind(var_name + '_')) # 0 if found, -1 if not found
             if string_found == 0:
                 pos = len(var_name) + 1
-                coincidences.append(int(item[pos]))
+                coincidences.append(int(item[pos:pos+2]))
             else:
-                var_path = f'{var_name}_0.csv'
-        # If there are coincidences, we sum 1 to dont overwrite the .csv of that day
+                var_path = f'{var_name}_00.csv'
+        # If there are coincidences, we sum 1 to not overwrite the .csv of that day
         if len(coincidences) > 0:
-            var_path = var_name + '_' + str(max(coincidences)+1) + '.csv'
+            # Extract the last item -> var_name + 'XX' and sum 1 to prevent the overwriting
+            number_of_csv_today = str(max(coincidences)+1)
+            if len(number_of_csv_today) == 2: # The case of two digit numbers
+                var_path = var_name + '_' + number_of_csv_today + '.csv'
+            elif len(number_of_csv_today) == 1: # The case of one digit numbers (we add a 0 before the number)
+                var_path = var_name + '_0' + number_of_csv_today + '.csv'
+            else:
+                # TODO: Logger
+                print(f'Number of .csv today is {number_of_csv_today}')
         elif len(coincidences) == 0:
             # If coincidences = [], that means either that there are not files in the directory or that the
             # files in the directory are of other days
-            var_path = f'{var_name}_0.csv'
+            var_path = f'{var_name}_00.csv'
         # Save to a .csv the data generated
         var_path = os.path.join(dir_name,var_path)
+        # TODO: Disjoint the array name of the .csv name
         parking_data.to_csv(var_path, sep=';', decimal=',')
+        # TODO: Logger
         print(f'{var_path} saved!')
 
 def main():
+    # Make scheduler global
     global s
+    # TODO: Create a logger
+    # Check if Data is created
+    try:
+        os.mkdir('./Data')
+    except FileExistsError:
+        # TODO: Future improvement, use the logger instead of prints
+        print('Data directory already exist')
     # Constant definition
     log = []
     today = datetime.now(pytz.timezone('Europe/Madrid'))
     DIR_NAME = 'Data'
-    varName = 'dataframe' + '_' + str(today.year) + '_' + str(today.month) + '_' + str(today.day)
-    globals()[varName] = DataFrame(columns=['Date', 'Time', 'General', 'DBS'])
+    var_name = 'dataframe' + '_' + str(today.year) + '_' + str(today.month) + '_' + str(today.day)
+    # TODO: The var_name is not needed to define the name of the .csv generated when saving the collected data, so
+    #   in future optimization me must get rid of it, as it is not needed
+    globals()[var_name] = DataFrame(columns=['Date', 'Time', 'General', 'DBS'])
+    # Here we definde the time function and the sleep function
     s = sched.scheduler(time.time, time.sleep)
     # Enter the parameters to the s object
-    s.enter(5, 1, get_general_DBS_parking_free_slots, (globals()[varName],varName))
+    s.enter(delay=5, priority=1, action=get_general_DBS_parking_free_slots, argument=(globals()[var_name],var_name))
     try:
         s.run()
     except BaseException as e:
@@ -81,15 +108,14 @@ def main():
         # Hay que hacer que los csv vayan a unca carpeta
         # Queda por añadir un if por si me falla a mitad de dia... hacer pruebas con archivo dimmie
         # Hay que añadir a gitignore que no suba los .csv
-        save_csv(globals()[varName], varName, DIR_NAME)
-        # Re run main() if the error , only exit the program manually
+        save_csv(globals()[var_name], var_name, DIR_NAME)
         if issubclass(e.__class__, Exception):
             log.append(e.__class__)
             main()
 
 
     finally:
-        save_csv(globals()[varName], 'last_run_backup', DIR_NAME, backup=True)
+        save_csv(globals()[var_name], 'last_run_backup', DIR_NAME, backup=True)
         print('The programm has been interrupted with these exceptions:')
         for error in log:
             print(error)
