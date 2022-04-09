@@ -15,12 +15,14 @@ def get_general_DBS_parking_free_slots(dataframe, var_name):
     :param var_name: 
     :return: 
     """
+    # Scrape the page where info is available
     page = requests.get('http://parking.deusto.es/')
     now = datetime.now(pytz.timezone('Europe/Madrid'))
+    # TODO: Logger
     print(now.time())
     #Get HTML content
     soup = BeautifulSoup(page.text, 'html.parser')
-    n = 0
+    n = 0 # Don't remember why I have to count
     general_number = ''
     dbs_number = ''
     for img_tag_name in soup.find_all('img'):
@@ -29,18 +31,24 @@ def get_general_DBS_parking_free_slots(dataframe, var_name):
           n += 1
         elif 'images/number' in img_tag_name['src'] and n>=3:
           dbs_number = dbs_number + img_tag_name['src'][13]
+    # Cast to integers
+    # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly
     general_number = int(general_number)
     dbs_number = int(dbs_number)
+    # Append elements to the Dataframe
+    # TODO: See if this is the optimal way
     dataframe.loc[dataframe['Time'].size] = {'Date': now.date(),
                                                    'Time': now.time(),
                                                    'General': general_number,
                                                    'DBS': dbs_number
                                                    }
-    s.enter(5, 1, get_general_DBS_parking_free_slots, (globals()[var_name],var_name))
+    # Enter again the action in the scheduler
+    # TODO: Understand why it needs to be called again
+    s.enter(delay=DELAY, priority=1, action=get_general_DBS_parking_free_slots, argument=(globals()[var_name],var_name))
 
 
 def save_csv(parking_data, var_name, dir_name, backup=False):
-    if backup is True:
+    if backup is True: # In case we want to store a backup of the last run
         var_path = os.path.join(dir_name, var_name + '.csv')
         parking_data.to_csv(var_path, sep=';', decimal=',')
         print(f'Backup of the last run saved in {var_name}.csv')
@@ -82,6 +90,8 @@ def save_csv(parking_data, var_name, dir_name, backup=False):
 def main():
     # Make scheduler global
     global s
+    # Define the delay (in seconds)
+    DELAY = 15
     # TODO: Create a logger
     # Check if Data is created
     try:
@@ -100,7 +110,7 @@ def main():
     # Here we definde the time function and the sleep function
     s = sched.scheduler(time.time, time.sleep)
     # Enter the parameters to the s object
-    s.enter(delay=5, priority=1, action=get_general_DBS_parking_free_slots, argument=(globals()[var_name],var_name))
+    s.enter(delay=DELAY, priority=1, action=get_general_DBS_parking_free_slots, argument=(globals()[var_name],var_name))
     try:
         s.run()
     except BaseException as e:
