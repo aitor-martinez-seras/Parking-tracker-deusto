@@ -20,7 +20,7 @@ def get_general_DBS_parking_free_slots(dataframe, var_name):
     page = requests.get('http://parking.deusto.es/')
     now = datetime.now(pytz.timezone('Europe/Madrid'))
     # TODO: Logger
-    print(now.time())
+    logging.info(now.time())
     #Get HTML content
     soup = BeautifulSoup(page.text, 'html.parser')
     n = 0 # Don't remember why I have to count
@@ -53,7 +53,6 @@ def save_csv(parking_data, var_name, dir_name, backup=False):
     if backup is True:
         var_path = os.path.join(dir_name, var_name + '.csv')
         parking_data.to_csv(var_path, sep=';', decimal=',')
-        print(f'Backup of the last run saved in {var_name}.csv')
     else:
         list_existing_files = os.listdir(dir_name)
         coincidences = []
@@ -96,7 +95,8 @@ def main():
     DELAY = 15
     # TODO: Create a logger
     # Define logger basic configuration
-    logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',
+                        level=logging.INFO)
     # Check if Data is created
     try:
         os.mkdir('./Data')
