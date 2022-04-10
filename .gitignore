@@ -3,7 +3,7 @@ Data/
 Lib/
 Scripts/
 share/
-
+.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -5,6 +5,7 @@ import sched, time
 from datetime import datetime
 import pytz
 from pandas import DataFrame
+import logging
 
 
 # Functions
@@ -48,7 +49,8 @@ def get_general_DBS_parking_free_slots(dataframe, var_name):
 
 
 def save_csv(parking_data, var_name, dir_name, backup=False):
-    if backup is True: # In case we want to store a backup of the last run
+    # To use this function for saving the backup also
+    if backup is True:
         var_path = os.path.join(dir_name, var_name + '.csv')
         parking_data.to_csv(var_path, sep=';', decimal=',')
         print(f'Backup of the last run saved in {var_name}.csv')
@@ -75,7 +77,7 @@ def save_csv(parking_data, var_name, dir_name, backup=False):
                 var_path = var_name + '_0' + number_of_csv_today + '.csv'
             else:
                 # TODO: Logger
-                print(f'Number of .csv today is {number_of_csv_today}')
+                logging.info(f'Number of .csv today is {number_of_csv_today}')
         elif len(coincidences) == 0:
             # If coincidences = [], that means either that there are not files in the directory or that the
             # files in the directory are of other days
@@ -84,21 +86,22 @@ def save_csv(parking_data, var_name, dir_name, backup=False):
         var_path = os.path.join(dir_name,var_path)
         # TODO: Disjoint the array name of the .csv name
         parking_data.to_csv(var_path, sep=';', decimal=',')
-        # TODO: Logger
-        print(f'{var_path} saved!')
+        logging.info(f'{var_path} saved!')
 
 def main():
     # Make scheduler global
     global s
     # Define the delay (in seconds)
+    global DELAY
     DELAY = 15
     # TODO: Create a logger
+    # Define logger basic configuration
+    logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
     # Check if Data is created
     try:
         os.mkdir('./Data')
     except FileExistsError:
-        # TODO: Future improvement, use the logger instead of prints
-        print('Data directory already exist')
+        logging.info('Data directory already exist')
     # Constant definition
     log = []
     today = datetime.now(pytz.timezone('Europe/Madrid'))
@@ -114,21 +117,20 @@ def main():
     try:
         s.run()
     except BaseException as e:
-        print(f'Exception {e.__class__} ocurred while retrieving data')
         # Hay que hacer que los csv vayan a unca carpeta
         # Queda por añadir un if por si me falla a mitad de dia... hacer pruebas con archivo dimmie
         # Hay que añadir a gitignore que no suba los .csv
         save_csv(globals()[var_name], var_name, DIR_NAME)
         if issubclass(e.__class__, Exception):
-            log.append(e.__class__)
+            logging.warning('Exception')
             main()
+        # If we don't return to main, we exit the program
+        logging.exception("Program will exit with following exception:")
 
 
     finally:
         save_csv(globals()[var_name], 'last_run_backup', DIR_NAME, backup=True)
-        print('The programm has been interrupted with these exceptions:')
-        for error in log:
-            print(error)
+        logging.info("last run's backup saved correctly")
 
 if __name__ == '__main__':
     main()
