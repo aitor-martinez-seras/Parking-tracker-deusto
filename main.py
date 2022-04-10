@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
@@ -7,6 +8,7 @@ from datetime import datetime
 import pytz
 from pandas import DataFrame
 import logging
+import signal
 
 
 def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: str):
@@ -100,10 +102,18 @@ def save_csv(parking_data: DataFrame, file_name: str, data_dir_name: str, backup
     parking_data.to_csv(file_path, sep=';', decimal=',')
     logging.info(f'{file_name} saved in {file_path}!')
 
+
 def main():
-    # Define logger basic configuration
-    logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',
-                        level=logging.INFO)
+    # SIGTERM signal handler
+    def sigterm_handler(signal, frame):
+        """
+        When receiving the SIGTERM signal from the crontab job, save the .csv files
+        """
+        save_csv(df_parking_data, file_name, DIR_NAME)
+        logging.info('Python script exiting gracesfully')
+        sys.exit(0)
+    # Register the handler
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
     # Make scheduler, the DELAY and the working_dir_path constants global
     global s, DELAY, working_dir_path
@@ -111,6 +121,10 @@ def main():
     DELAY = 15
     # Define the current directory for the paths
     working_dir_path = Path(os.path.dirname(os.path.realpath(__file__)))
+
+    # Define logger basic configuration
+    logging.basicConfig(filename= (working_dir_path /'app.log'), filemode='w',
+                        format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
     # Constant definition
     today = datetime.now(pytz.timezone('Europe/Madrid'))
@@ -120,6 +134,7 @@ def main():
         os.mkdir(working_dir_path / "Data")
     except FileExistsError:
         logging.info('Data directory already exist')
+
 
     # The file names will be dataframe followed by the year, month, day and a number between 00 and 99. The last number
     # is for the case where exceptions happen during exectuions and more than one dataframe per day is needed
