@@ -110,8 +110,9 @@ def main():
         """
         When receiving the SIGTERM signal from the crontab job, save the .csv files
         """
-        save_csv(df_parking_data, file_name, DIR_NAME)
-        logging.info('Python script exiting gracesfully')
+        logging.info('Python script exiting gracesfully after catching the SIGTERM signal')
+        # The sys.exit(0) raises SystemExit exception, that is catched by the try/except clauses that are
+        # responsible for saving the .csv, therefore there is no need to save the .csv here
         sys.exit(0)
     # Register the handler
     signal.signal(signal.SIGTERM, sigterm_handler)
@@ -153,9 +154,13 @@ def main():
     try:
         s.run() # Makes the scheduler start
     except BaseException as e:
-        # In case we have an exception of any kind, we want to save the retrieved data to a .csv file
-        save_csv(df_parking_data, file_name, DIR_NAME)
-        # If the exception is not a KeyBoardInterrup, program must continue and therefore we must call main again
+        # In case we have an exception of any kind, we want to save the retrieved data to a .csv file if the dataframe
+        # is not going to be empty
+        if len(df_parking_data.index) > 9: # save .csv only if we have meaningfull data
+            save_csv(df_parking_data, file_name, DIR_NAME)
+        # If the exception is not a KeyBoardInterrup nor a SytemExit, that do not inherit from Exception,
+        # program must continue and therefore we must call main again
+        # e.__class__ is used to get the class of the exception
         if issubclass(e.__class__, Exception):
             logging.warning('Following exception ocurred, program will try to rerun:')
             time.sleep(10) # In case there is a problem with the website, we wait 10 seconds before reruning
