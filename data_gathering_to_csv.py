@@ -164,7 +164,7 @@ def main():
         if issubclass(e.__class__, Exception):
             logging.warning('Following exception ocurred, program will try to rerun:')
             time.sleep(10) # In case there is a problem with the website, we wait 10 seconds before reruning
-            s.run()
+            main()
         # If we don't return to main, we exit the program
         logging.exception("Program will exit with following exception:")
 
