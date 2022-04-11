@@ -39,7 +39,8 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: st
           dbs_number = dbs_number + img_tag_name['src'][13]
 
     # Cast to integers
-    # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly
+    # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly, we need to
+    #   know if the error comes from bad scrapping
     general_number = int(general_number)
     dbs_number = int(dbs_number)
     # Append elements to the Dataframe
@@ -71,7 +72,7 @@ def complete_file_name(file_name: str, data_dir_name: str) -> str:
             # We append the last number of the file that refers to the number of files in the specified day (specified)
             # by the previous numbers in the name. We split the string by the "_", take the last position of the
             # generated list and then extract the two numbers
-            coincidences.append(item.split("_")[-1][:2])
+            coincidences.append(int(item.split("_")[-1][:2]))
 
     # If there are coincidences, we sum 1 to the number not overwrite the .csv of that day
     if len(coincidences) > 0:
@@ -157,14 +158,14 @@ def main():
         # If the exception is not a KeyBoardInterrup, program must continue and therefore we must call main again
         if issubclass(e.__class__, Exception):
             logging.warning('Following exception ocurred, program will try to rerun:')
-            main()
+            time.sleep(10) # In case there is a problem with the website, we wait 10 seconds before reruning
+            s.run()
         # If we don't return to main, we exit the program
         logging.exception("Program will exit with following exception:")
 
     # Just in case other exception happens, we ensure the data is saved in a backup file that we will rewrite every time
     finally:
         save_csv(df_parking_data, 'last_run_backup.csv', DIR_NAME, backup=True)
-        logging.info("last run's backup saved correctly")
 
 if __name__ == '__main__':
     main()
