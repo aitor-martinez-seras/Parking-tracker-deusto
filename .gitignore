@@ -4,6 +4,8 @@ Lib/
 Scripts/
 share/
 .log
+desktop.ini
+prueba.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
