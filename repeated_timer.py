@@ -1,11 +1,10 @@
-import threading 
-import time
+import threading
 import os
 import sys
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
-import sched, time
+import time
 from datetime import datetime
 import pytz
 from pandas import DataFrame
@@ -13,7 +12,7 @@ import logging
 import signal
 
 
-class RepeatedTimer():
+class RepeatedTimer:
   def __init__(self, interval, function, *args, **kwargs):
     self._timer = None
     self.interval = interval
@@ -22,22 +21,47 @@ class RepeatedTimer():
     self.kwargs = kwargs
     self.is_running = False
     self.next_call = time.time()
-    self.start()
-    
+    self.start() # Se ejecuta en la creación del objeto, es el punto de entrada del objeto por así decir
 
   def _run(self):
+    # Tras pasar el intervalo definido, se ejecuta el objeto Timer y esta funcion entra en ejecucion. Primero define
+    # a False el is_running para que asi cuando vaya a la función start quede programada la siguiente iteracion.
+    # Si no me equivoco, casi toodo el delay que hay se debe a lo que se tarda en cambiar el atributo y en ejecutar esta
+    # la funcion start()
     self.is_running = False
+    # Como se describe antes, se ejecuta este método para ir preparando ya la siguiente iteración
     self.start()
+    # Por fin, la funcion que nos interesa que se repita es ejecutada.
+    # TODO: Por lo que he entendido, en la propia funcion que se ejecuta en el thread es donde debería ocurrir
+    #  el exception handling que hago. Ahora bien, me queda la duda de cual es el main thread, ya que lo que tarda esta
+    #  funcion en ejecutarse es poquito tiempo, por lo que el programa se tiene que estar ejecutando en otro lado. Me
+    #  inclino a pensar que ocurre en la llamada a threading.Timer y threading.start
     self.function(*self.args, **self.kwargs)
-    
 
   def start(self):
+    """
+    Esta funcion lo que hace es ejecutarse una y otra vez
+    :return:
+    """
     if not self.is_running:
+      # Calula cuando tiene que ocurrir la siguiente iteracion
       self.next_call += self.interval
-      self._timer = threading.Timer(self.next_call - time.time(), self._run)
-      self._timer.start()
+      # Crea la tarea de ejecutar el self._run para dentro del tiempo especificado en interval
+      # (a través de self.next_call)
+      try:
+        self._timer = threading.Timer(self.next_call - time.time(), self._run)
+        # No puedo usar esto del daemon ya que si python detecta que no hay nada corriendo que no sea un daemon se para
+        #self._timer.daemon = True
+        # La iteracion que ha sido programada debe ser iniciada, por lo que se usa su método .start()
+        self._timer.start()
+      except BaseException as e:
+          print("Estoy en la exception")
+          print(e)
+          print(e.__class__)
+          print(self.args)
+      # Define que se esta corriendo codigo tras activar la siguiente iteracion (que será dentro de self.interval
+      # segundos) con el método start
       self.is_running = True
-      
 
   def stop(self):
     self._timer.cancel()
@@ -81,7 +105,6 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: st
                                              'Time': now.time(),
                                              'General': general_number,
                                              'DBS': dbs_number}
-    print(f'Retrieved info {time.time()}')
     print(df_parking_data)
 
 
@@ -149,6 +172,23 @@ def main():
     # Register the handler
     signal.signal(signal.SIGTERM, sigterm_handler)
 
+    def sigint_handler(signum, frame):
+        # TODO: Aqui es donde tiene que ir todo el codigo de guardado de dataframe. En el codigo del otro sigterm
+        #  handler tambien debe ir algo nuevo, revisar
+        print("Inside the signal handler")
+        print(df_parking_data)
+        print("Goodbye")
+        rt.stop()
+
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    # def custom_hook(args):
+    #     print("Estoy en el hook")
+    #     print(df_parking_data)
+    #     print("Hago cosas dentro del hook")
+    #     print(args)
+    # threading.excepthook = custom_hook
+
     # Make scheduler, the DELAY and the working_dir_path constants global
     global working_dir_path
     # Define the delay (in seconds)
@@ -180,11 +220,16 @@ def main():
     try:
         # Here we define the class that handles the execution of the repeated function.
         # It auto-starts, no need of rt.start()
-        rt = RepeatedTimer(DELAY, get_general_DBS_parking_free_slots, df_parking_data, file_name) 
+        rt = RepeatedTimer(DELAY, get_general_DBS_parking_free_slots, df_parking_data, file_name)
+        print("Before join")
+        rt._timer.join()
+        print("After join")
     except BaseException as e:
+        rt.stop()
+        print(df_parking_data)
         # In case we have an exception of any kind, we want to save the retrieved data to a .csv file if the dataframe
         # is not going to be empty
-        if len(df_parking_data.index) > 9: # save .csv only if we have meaningful data
+        if len(df_parking_data.index) > 2: # save .csv only if we have meaningful data
             save_csv(df_parking_data, file_name, DIR_NAME)
         # If the exception is not a KeyBoardInterrup nor a SytemExit, that do not inherit from Exception,
         # program must continue and therefore we must call main again
@@ -195,9 +240,11 @@ def main():
             main()
         # If we don't return to main, we exit the program
         logging.exception("Program will exit with following exception:")
+        print('Executed code till this line')
 
     # Just in case other exception happens, we ensure the data is saved in a backup file that we will rewrite every time
     finally:
+        print('This executes')
         save_csv(df_parking_data, 'last_run_backup.csv', DIR_NAME, backup=True)
 
 
