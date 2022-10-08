@@ -26,34 +26,31 @@ def get_general_DBS_parking_free_slots():
     Function that scrapes the webpage of the parking, collects the parking occupation and returns the .
     :return: returns the timestamp
     """
-    try:
-        # Scrape the page where info is available
-        page = requests.get('http://parking.deusto.es/')
-        timestamp = datetime.now(pytz.timezone('Europe/Madrid'))
-        logging.info(timestamp.time())
+    # Scrape the page where info is available
+    page = requests.get('http://parking.deusto.es/')
+    timestamp = datetime.now(pytz.timezone('Europe/Madrid'))
+    logging.info(timestamp.time())
 
-        # Get HTML content
-        soup = BeautifulSoup(page.text, 'html.parser')
-        n = 0 # Don't remember why I have to count
-        # Initialize the string variables where the number of spaces available in the General and the DBS parking
-        # are going to be stored
-        general_number = ''
-        dbs_number = ''
-        # Following code is for navigating the HTML
-        for img_tag_name in soup.find_all('img'):
-            if 'images/number' in img_tag_name['src'] and n<3:
-                general_number = general_number + img_tag_name['src'][13]
-                n += 1
-            elif 'images/number' in img_tag_name['src'] and n>=3:
-                dbs_number = dbs_number + img_tag_name['src'][13]
+    # Get HTML content
+    soup = BeautifulSoup(page.text, 'html.parser')
+    n = 0 # Don't remember why I have to count
+    # Initialize the string variables where the number of spaces available in the General and the DBS parking
+    # are going to be stored
+    general_number = ''
+    dbs_number = ''
+    # Following code is for navigating the HTML
+    for img_tag_name in soup.find_all('img'):
+        if 'images/number' in img_tag_name['src'] and n<3:
+            general_number = general_number + img_tag_name['src'][13]
+            n += 1
+        elif 'images/number' in img_tag_name['src'] and n>=3:
+            dbs_number = dbs_number + img_tag_name['src'][13]
 
-        # Cast to integers
-        # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly,
-        #  we need to know if the error comes from bad scrapping
-        general_number = int(general_number)
-        dbs_number = int(dbs_number)
+    # Cast to integers
+    general_number = int(general_number)
+    dbs_number = int(dbs_number)
 
-        return timestamp, general_number, dbs_number
+    return timestamp, general_number, dbs_number
 
 
 def collect_new_data_point(df_parking_data: DataFrame):
@@ -67,7 +64,7 @@ def collect_new_data_point(df_parking_data: DataFrame):
     try:
         timestamp, general_number, dbs_number = get_general_DBS_parking_free_slots()
     except Exception as e1:
-        logging.exception(f'Following exception occurred during scraping data: {e}')
+        logging.exception(f'Following exception occurred during scraping data: {e1}')
 
     try:
         # Save the data to the dataframe

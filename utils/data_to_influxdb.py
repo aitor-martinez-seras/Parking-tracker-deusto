@@ -1,7 +1,7 @@
 from datetime import datetime
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
-from constants import TOKEN, ORG, BUCKET
+from utils.constants import TOKEN, ORG, BUCKET
 
 
 def data_to_influx(now: datetime, general_number: int, dbs_number: int):
