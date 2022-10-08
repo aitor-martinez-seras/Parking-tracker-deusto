@@ -8,9 +8,9 @@ import sys
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
-from repeated_timer import RepeatedTimer
-from data_to_influxdb import data_to_influx
-from constants import DELAY
+from utils.repeated_timer import RepeatedTimer
+from utils.data_to_influxdb import data_to_influx
+from utils.constants import DELAY
 
 
 def data_to_dataframe(df_parking_data: DataFrame, timestamp: datetime, general_number: int, dbs_number: int):
