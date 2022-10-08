@@ -32,10 +32,6 @@ class RepeatedTimer:
     # Como se describe antes, se ejecuta este método para ir preparando ya la siguiente iteración
     self.start()
     # Por fin, la funcion que nos interesa que se repita es ejecutada.
-    # TODO: Por lo que he entendido, en la propia funcion que se ejecuta en el thread es donde debería ocurrir
-    #  el exception handling que hago. Ahora bien, me queda la duda de cual es el main thread, ya que lo que tarda esta
-    #  funcion en ejecutarse es poquito tiempo, por lo que el programa se tiene que estar ejecutando en otro lado. Me
-    #  inclino a pensar que ocurre en la llamada a threading.Timer y threading.start
     self.function(*self.args, **self.kwargs)
 
   def start(self):
@@ -75,37 +71,40 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: st
     :param df_parking_data: Dataframe wehre data is going to be stored
     :param file_name: str containing the file name
     """
-    # Scrape the page where info is available
-    page = requests.get('http://parking.deusto.es/')
-    now = datetime.now(pytz.timezone('Europe/Madrid'))
-    logging.info(now.time())
+    try:
+        # Scrape the page where info is available
+        page = requests.get('http://parking.deusto.es/')
+        now = datetime.now(pytz.timezone('Europe/Madrid'))
+        logging.info(now.time())
 
-    #Get HTML content
-    soup = BeautifulSoup(page.text, 'html.parser')
-    n = 0 # Don't remember why I have to count
-    # Initialize the string variables where the number of spaces available in the General parking and the DBS parking
-    # are going to be stored
-    general_number = ''
-    dbs_number = ''
-    # Following code is for navigating the HTML
-    for img_tag_name in soup.find_all('img'):
-        if 'images/number' in img_tag_name['src'] and n<3:
-          general_number = general_number + img_tag_name['src'][13]
-          n += 1
-        elif 'images/number' in img_tag_name['src'] and n>=3:
-          dbs_number = dbs_number + img_tag_name['src'][13]
+        #Get HTML content
+        soup = BeautifulSoup(page.text, 'html.parser')
+        n = 0 # Don't remember why I have to count
+        # Initialize the string variables where the number of spaces available in the General parking and the DBS parking
+        # are going to be stored
+        general_number = ''
+        dbs_number = ''
+        # Following code is for navigating the HTML
+        for img_tag_name in soup.find_all('img'):
+            if 'images/number' in img_tag_name['src'] and n<3:
+              general_number = general_number + img_tag_name['src'][13]
+              n += 1
+            elif 'images/number' in img_tag_name['src'] and n>=3:
+              dbs_number = dbs_number + img_tag_name['src'][13]
 
-    # Cast to integers
-    # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly, we need to
-    #   know if the error comes from bad scrapping
-    general_number = int(general_number)
-    dbs_number = int(dbs_number)
-    # Append elements to the Dataframe
-    df_parking_data.loc[df_parking_data['Time'].size] = {'Date': now.date(),
-                                             'Time': now.time(),
-                                             'General': general_number,
-                                             'DBS': dbs_number}
-    print(df_parking_data)
+        # Cast to integers
+        # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly, we need to
+        #   know if the error comes from bad scrapping
+        general_number = int(general_number)
+        dbs_number = int(dbs_number)
+        # Append elements to the Dataframe
+        df_parking_data.loc[df_parking_data['Time'].size] = {'Date': now.date(),
+                                                 'Time': now.time(),
+                                                 'General': general_number,
+                                                 'DBS': dbs_number}
+    except Exception as e:
+        # We want to catch all exceptions for future debugging
+        logging.exception(f'Following exception ocurred, program will try to rerun: {e}')
 
 
 def complete_file_name(file_name: str, data_dir_name: str) -> str:
@@ -160,36 +159,33 @@ def save_csv(parking_data: DataFrame, file_name: str, data_dir_name: str, backup
 
 
 def main():
-    # SIGTERM signal handler (executes when SIGTERM (a class of signal) is issued)
+    # SIGTERM signal handler (executes when SIGTERM (a class of signal) is issued). This signal is emited when pfkill
+    # command is executed from the crontab scheduler
     def sigterm_handler(signal, frame):
         """
         When receiving the SIGTERM signal from the crontab job, save the .csv files
         """
         logging.info('Python script exiting gracesfully after catching the SIGTERM signal')
-        # The sys.exit(0) raises SystemExit exception, that is catched by the try/except clauses that are
-        # responsible for saving the .csv, therefore there is no need to save the .csv here
+        rt.stop()
+        save_csv(df_parking_data, file_name, DIR_NAME)
         sys.exit(0)
     # Register the handler
     signal.signal(signal.SIGTERM, sigterm_handler)
 
+    # SIGINT signal is received when user hits control+C
     def sigint_handler(signum, frame):
-        # TODO: Aqui es donde tiene que ir todo el codigo de guardado de dataframe. En el codigo del otro sigterm
-        #  handler tambien debe ir algo nuevo, revisar
-        print("Inside the signal handler")
-        print(df_parking_data)
-        print("Goodbye")
+        """
+        When receiving the SIGTINT signal from the user hitting control+C, save the .csv files
+        :return:
+        """
         rt.stop()
-
+        if len(df_parking_data.index) > 2:  # save .csv only if we have meaningful data
+            save_csv(df_parking_data, file_name, DIR_NAME)
+        sys.exit(0)
+    # Register the handler
     signal.signal(signal.SIGINT, sigint_handler)
 
-    # def custom_hook(args):
-    #     print("Estoy en el hook")
-    #     print(df_parking_data)
-    #     print("Hago cosas dentro del hook")
-    #     print(args)
-    # threading.excepthook = custom_hook
-
-    # Make scheduler, the DELAY and the working_dir_path constants global
+    # Make the working_dir_path constants global
     global working_dir_path
     # Define the delay (in seconds)
     DELAY = 15
@@ -217,35 +213,12 @@ def main():
 
     # We handle every exception to check if we are killing the program or some other exception happened, so in that case
     # we can call the program to restart itself
-    try:
-        # Here we define the class that handles the execution of the repeated function.
-        # It auto-starts, no need of rt.start()
-        rt = RepeatedTimer(DELAY, get_general_DBS_parking_free_slots, df_parking_data, file_name)
-        print("Before join")
-        rt._timer.join()
-        print("After join")
-    except BaseException as e:
-        rt.stop()
-        print(df_parking_data)
-        # In case we have an exception of any kind, we want to save the retrieved data to a .csv file if the dataframe
-        # is not going to be empty
-        if len(df_parking_data.index) > 2: # save .csv only if we have meaningful data
-            save_csv(df_parking_data, file_name, DIR_NAME)
-        # If the exception is not a KeyBoardInterrup nor a SytemExit, that do not inherit from Exception,
-        # program must continue and therefore we must call main again
-        # e.__class__ is used to get the class of the exception
-        if issubclass(e.__class__, Exception):
-            logging.warning('Following exception occurred, program will try to rerun:')
-            time.sleep(10)  # In case there is a problem with the website, we wait 10 seconds before rerunning
-            main()
-        # If we don't return to main, we exit the program
-        logging.exception("Program will exit with following exception:")
-        print('Executed code till this line')
-
-    # Just in case other exception happens, we ensure the data is saved in a backup file that we will rewrite every time
-    finally:
-        print('This executes')
-        save_csv(df_parking_data, 'last_run_backup.csv', DIR_NAME, backup=True)
+    # Here we define the class that handles the execution of the repeated function.
+    # It auto-starts, no need of rt.start()
+    # Because of the way the RepeatedTimer class works, if the executing thread throws an exception, the next thread
+    # is already started (but it will execute when the interval has elapsed), so the program will indefinitely conitnue
+    # running till the SIGTERM or SIGINT signals are issued by the OS.
+    rt = RepeatedTimer(DELAY, get_general_DBS_parking_free_slots, df_parking_data, file_name)
 
 
 if __name__ == '__main__':
