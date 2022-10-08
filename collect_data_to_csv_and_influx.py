@@ -1,5 +1,4 @@
 from datetime import datetime
-
 import pytz
 from pandas import DataFrame
 import logging
@@ -11,28 +10,27 @@ import requests
 from bs4 import BeautifulSoup
 from repeated_timer import RepeatedTimer
 from data_to_influxdb import data_to_influx
+from constants import DELAY
 
 
-def data_to_dataframe(df_parking_data: DataFrame, now: datetime, general_number: int, dbs_number: int):
+def data_to_dataframe(df_parking_data: DataFrame, timestamp: datetime, general_number: int, dbs_number: int):
     # Append elements to the Dataframe
-    df_parking_data.loc[df_parking_data['Time'].size] = {'Date': now.date(),
-                                                         'Time': now.time(),
+    df_parking_data.loc[df_parking_data['Time'].size] = {'Date': timestamp.date(),
+                                                         'Time': timestamp.time(),
                                                          'General': general_number,
                                                          'DBS': dbs_number}
 
 
-def get_general_DBS_parking_free_slots(df_parking_data: DataFrame):
+def get_general_DBS_parking_free_slots():
     """
-    Function that scrapes the webpage of the parking, collects the parking occupation and inserts a row with the info in
-    the dataframe.
-    :param df_parking_data: Dataframe wehre data is going to be stored
-    :param file_name: str containing the file name
+    Function that scrapes the webpage of the parking, collects the parking occupation and returns the .
+    :return: returns the timestamp
     """
     try:
         # Scrape the page where info is available
         page = requests.get('http://parking.deusto.es/')
-        now = datetime.now(pytz.timezone('Europe/Madrid'))
-        logging.info(now.time())
+        timestamp = datetime.now(pytz.timezone('Europe/Madrid'))
+        logging.info(timestamp.time())
 
         # Get HTML content
         soup = BeautifulSoup(page.text, 'html.parser')
@@ -55,15 +53,36 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame):
         general_number = int(general_number)
         dbs_number = int(dbs_number)
 
+        return timestamp, general_number, dbs_number
+
+
+def collect_new_data_point(df_parking_data: DataFrame):
+    """
+    Scrapes a new data point and saves it to the .csv and influxdb
+    :param df_parking_data: dataframe with all data points collected
+    :return:
+    """
+    # TODO: after running the script for a period, check the Exceptions caught to update this clauses to catch the
+    #  exact exceptions in each case.
+    try:
+        timestamp, general_number, dbs_number = get_general_DBS_parking_free_slots()
+    except Exception as e1:
+        logging.exception(f'Following exception occurred during scraping data: {e}')
+
+    try:
         # Save the data to the dataframe
-        data_to_dataframe(df_parking_data, now, general_number, dbs_number)
-        # Save the data to influx database. This way, if an error happens, the program will have all data save in the db
-        data_to_influx(now, general_number, dbs_number)
+        data_to_dataframe(df_parking_data, timestamp, general_number, dbs_number)
+    except Exception as e2:
+        logging.exception(
+            f'Following exception occurred during writing data to DataFrame, program will try to rerun: {e2}')
 
-
-    except Exception as e:
-        # We want to catch all exceptions for future debugging
-        logging.exception(f'Following exception ocurred, program will try to rerun: {e}')
+    try:
+        # Save the data to influx database. This way, if an error happens, the program will have all data save in the
+        # database. In case an exception occurs, just continue the execution
+        data_to_influx(timestamp, general_number, dbs_number)
+    except Exception as e3:
+        logging.exception(
+            f'Following exception occurred during writing data to Influxdb, program will try to rerun: {e3}')
 
 
 def complete_file_name(file_name: str, data_dir_name: str) -> str:
@@ -146,8 +165,6 @@ def main():
 
     # Make the working_dir_path constants global
     global working_dir_path
-    # Define the delay (in seconds)
-    DELAY = 15
     # Define the current directory for the paths
     working_dir_path = Path(os.path.dirname(os.path.realpath(__file__)))
 
@@ -177,7 +194,7 @@ def main():
     # Because of the way the RepeatedTimer class works, if the executing thread throws an exception, the next thread
     # is already started (but it will execute when the interval has elapsed), so the program will indefinitely conitnue
     # running till the SIGTERM or SIGINT signals are issued by the OS.
-    rt = RepeatedTimer(DELAY, get_general_DBS_parking_free_slots, df_parking_data)
+    rt = RepeatedTimer(DELAY, collect_new_data_point, df_parking_data)
 
 
 if __name__ == '__main__':
