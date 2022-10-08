@@ -1,4 +1,5 @@
 from datetime import datetime
+
 import pytz
 from pandas import DataFrame
 import logging
@@ -9,6 +10,16 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 from repeated_timer import RepeatedTimer
+from data_to_influxdb import data_to_influx
+
+
+def data_to_dataframe(df_parking_data: DataFrame, now: datetime, general_number: int, dbs_number: int):
+    # Append elements to the Dataframe
+    df_parking_data.loc[df_parking_data['Time'].size] = {'Date': now.date(),
+                                                         'Time': now.time(),
+                                                         'General': general_number,
+                                                         'DBS': dbs_number}
+
 
 def get_general_DBS_parking_free_slots(df_parking_data: DataFrame):
     """
@@ -23,31 +34,33 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame):
         now = datetime.now(pytz.timezone('Europe/Madrid'))
         logging.info(now.time())
 
-        #Get HTML content
+        # Get HTML content
         soup = BeautifulSoup(page.text, 'html.parser')
         n = 0 # Don't remember why I have to count
-        # Initialize the string variables where the number of spaces available in the General parking and the DBS parking
+        # Initialize the string variables where the number of spaces available in the General and the DBS parking
         # are going to be stored
         general_number = ''
         dbs_number = ''
         # Following code is for navigating the HTML
         for img_tag_name in soup.find_all('img'):
             if 'images/number' in img_tag_name['src'] and n<3:
-              general_number = general_number + img_tag_name['src'][13]
-              n += 1
+                general_number = general_number + img_tag_name['src'][13]
+                n += 1
             elif 'images/number' in img_tag_name['src'] and n>=3:
-              dbs_number = dbs_number + img_tag_name['src'][13]
+                dbs_number = dbs_number + img_tag_name['src'][13]
 
         # Cast to integers
-        # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly, we need to
-        #   know if the error comes from bad scrapping
+        # TODO: Error preventing of possible fails when general number and dbs number are not scrapped corretly,
+        #  we need to know if the error comes from bad scrapping
         general_number = int(general_number)
         dbs_number = int(dbs_number)
-        # Append elements to the Dataframe
-        df_parking_data.loc[df_parking_data['Time'].size] = {'Date': now.date(),
-                                                 'Time': now.time(),
-                                                 'General': general_number,
-                                                 'DBS': dbs_number}
+
+        # Save the data to the dataframe
+        data_to_dataframe(df_parking_data, now, general_number, dbs_number)
+        # Save the data to influx database. This way, if an error happens, the program will have all data save in the db
+        data_to_influx(now, general_number, dbs_number)
+
+
     except Exception as e:
         # We want to catch all exceptions for future debugging
         logging.exception(f'Following exception ocurred, program will try to rerun: {e}')
