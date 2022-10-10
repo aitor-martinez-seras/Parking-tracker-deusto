@@ -31,3 +31,19 @@ def data_to_influx(now: datetime, general_number: int, dbs_number: int):
     # Write the data points
     write_api.write(BUCKET, ORG, sequence)
 
+
+def query_data_from_influx():
+    # Connection. The URL is from my local network
+    client = InfluxDBClient(url="http://192.168.1.90:8086", token=TOKEN)
+    print('hello')
+    query = f'from(bucket: "{BUCKET}") |> range(start: -5m) |> filter(fn: (r) => r.Parking == "DBS)'
+    #query = f'from(bucket: "{BUCKET}") |> range(start: -5m)'
+    tables = client.query_api().query(query, org=ORG)
+    return tables
+
+
+if __name__ == "__main__":
+    tables = query_data_from_influx()
+
+
+
