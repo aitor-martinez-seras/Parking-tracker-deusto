@@ -8,6 +8,7 @@ desktop.ini
 prueba.py
 config.py
 pruebas.ipynb
+**/.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
