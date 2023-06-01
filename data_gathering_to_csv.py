@@ -1,14 +1,15 @@
 import os
 import sys
 from pathlib import Path
-import requests
-from bs4 import BeautifulSoup
 import sched, time
 from datetime import datetime
-import pytz
-from pandas import DataFrame
 import logging
 import signal
+
+import requests
+import pytz
+from bs4 import BeautifulSoup
+from pandas import DataFrame
 
 
 def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: str):

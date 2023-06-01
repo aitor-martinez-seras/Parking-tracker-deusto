@@ -1,15 +1,24 @@
+import os
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-from config import USERNAME, PASSWORD, DATABASE, PORT
+from utils.constants import DOTENV_PATH
+from dotenv import load_dotenv
 
 
 # Creates the URL to connect to the database in a friendly way
 # In this case would be: postgresql+psycopg2://postgres:944780847Aa.@localhost:5432/Parking-deusto
 # Scheme: "postgres+psycopg2://<USERNAME>:<PASSWORD>@<IP_ADDRESS>:<PORT>/<DATABASE_NAME>"
+
+load_dotenv(DOTENV_PATH)
+USERNAME = os.environ['POSTGRES_USER']
+PASSWORD = os.environ['POSTGRES_PASSWORD']
+PORT = os.environ['POSTGRES_PORT']
+DATABASE = os.environ['POSTGRES_DB']
+
 uri = URL.create(
     drivername="postgresql+psycopg2",
     username=USERNAME,

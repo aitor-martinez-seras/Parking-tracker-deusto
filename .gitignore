@@ -1,13 +1,11 @@
 # User defined
-Data/
-Lib/
-Scripts/
-share/
 .log
 desktop.ini
 prueba.py
 config.py
 pruebas.ipynb
+**/.env
+.qsyncclient
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
