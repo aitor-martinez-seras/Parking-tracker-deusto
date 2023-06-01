@@ -5,10 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-from config import USERNAME, PASSWORD, DATABASE, PORT
 from utils.constants import DOTENV_PATH
 from dotenv import load_dotenv
-
 
 
 # Creates the URL to connect to the database in a friendly way
