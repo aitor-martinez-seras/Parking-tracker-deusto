@@ -48,7 +48,7 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: st
     #   know if the error comes from bad scrapping
     general_number = int(general_number)
     dbs_number = int(dbs_number)
-    
+
     # Append elements to the Dataframe
     df_parking_data.loc[df_parking_data['Time'].size] = {
         'Date': now.date(),
@@ -146,11 +146,14 @@ def main():
     file_name = 'dataframe' + '_' + str(today.year) + '_' + str(today.month).zfill(2) + '_' + str(today.day).zfill(2)
     df_parking_data = DataFrame(columns=['Date', 'Time', 'General', 'DBS'])
 
-    # Here we definde the time function and the sleep function for the scheduler
+    # Here we define the time function and the sleep function for the scheduler
     s = sched.scheduler(time.time, time.sleep)
-    # Enter the parameters to the s object
+    # Queue the event of retrieving the data
     s.enter(delay=DELAY, priority=1, action=get_general_DBS_parking_free_slots, argument=(df_parking_data, file_name))
-
+    
+    # MAIN LOOP
+    # Inside the get_general_DBS_parking_free_slots() function another event is queued, therefore when using s.run()
+    # we enter an infinite loop that ends when Ctrl+C or the SIGTERM is received.
     # We handle every exception to check if we are killing the program or some other exception happened, so in that case
     # we can call the program to restart itself
     try:
@@ -160,14 +163,14 @@ def main():
         # is not going to be empty
         if len(df_parking_data.index) > 9: # save .csv only if we have meaningfull data
             save_csv(df_parking_data, file_name, UNMERGED_DATA_DIR_PATH)
-        # If the exception is not a KeyBoardInterrup nor a SytemExit, that do not inherit from Exception,
-        # program must continue and therefore we must call main again
+        # If the exception is not a KeyBoardInterrup nor a SytemExit (they do not inherit from Exception),
+        # program must continue and therefore we must call main again.
         # e.__class__ is used to get the class of the exception
-        if issubclass(e.__class__, Exception):
+        if issubclass(e.__class__, Exception):  # Checks if the exception is anything but KeyBoardInterrup or SytemExit
             logging.warning('Following exception ocurred, program will try to rerun:')
             time.sleep(10) # In case there is a problem with the website, we wait 10 seconds before reruning
             main()
-        # If we don't return to main, we exit the program
+        # Case where the exception is KeyBoardInterrup or SytemExit
         logging.exception("Program will exit with following exception:")
 
     # Just in case other exception happens, we ensure the data is saved in a backup file that we will rewrite every time
