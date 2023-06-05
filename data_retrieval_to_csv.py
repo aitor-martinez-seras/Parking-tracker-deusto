@@ -11,6 +11,8 @@ import pytz
 from bs4 import BeautifulSoup
 from pandas import DataFrame
 
+from utils.constants import UNMERGED_DATA_DIR_PATH, LOGS_PATH
+
 
 def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: str):
     """
@@ -26,11 +28,13 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: st
 
     #Get HTML content
     soup = BeautifulSoup(page.text, 'html.parser')
-    n = 0 # Don't remember why I have to count
+    n = 0
+
     # Initialize the string variables where the number of spaces available in the General parking and the DBS parking
     # are going to be stored
     general_number = ''
     dbs_number = ''
+
     # Following code is for navigating the HTML
     for img_tag_name in soup.find_all('img'):
         if 'images/number' in img_tag_name['src'] and n<3:
@@ -44,17 +48,20 @@ def get_general_DBS_parking_free_slots(df_parking_data: DataFrame, file_name: st
     #   know if the error comes from bad scrapping
     general_number = int(general_number)
     dbs_number = int(dbs_number)
+    
     # Append elements to the Dataframe
-    df_parking_data.loc[df_parking_data['Time'].size] = {'Date': now.date(),
-                                             'Time': now.time(),
-                                             'General': general_number,
-                                             'DBS': dbs_number}
+    df_parking_data.loc[df_parking_data['Time'].size] = {
+        'Date': now.date(),
+        'Time': now.time(),
+        'General': general_number,
+        'DBS': dbs_number
+    }
+
     # Enter again the action in the scheduler
-    # TODO: Understand why it needs to be called again
     s.enter(delay=DELAY, priority=1, action=get_general_DBS_parking_free_slots, argument=(df_parking_data,file_name))
 
 
-def complete_file_name(file_name: str, data_dir_name: str) -> str:
+def complete_file_name(file_name: str, data_dir_path: Path) -> str:
     """
     Returns the complete file name (of the form dataframe_(year)_(month)_(day)_(number of files within one day))
     by searching trought the directory for files of the same day
@@ -62,7 +69,7 @@ def complete_file_name(file_name: str, data_dir_name: str) -> str:
     :param data_dir_name:  str containing the name of the directory where data is going to be stored
     :return: str with the complete file name
     """
-    list_existing_files = os.listdir(working_dir_path / data_dir_name)
+    list_existing_files = os.listdir(data_dir_path)
     coincidences = []
     # Check in the directory if there is a file of the same day already
     for item in list_existing_files:
@@ -88,7 +95,7 @@ def complete_file_name(file_name: str, data_dir_name: str) -> str:
     return file_name
 
 
-def save_csv(parking_data: DataFrame, file_name: str, data_dir_name: str, backup=False):
+def save_csv(parking_data: DataFrame, file_name: str, data_dir_path: Path, backup=False):
     """
     Saves the dataframe to the .csv file with the name file_name in the directory data_dir_name
     :param parking_data: Dataframe with the data
@@ -97,10 +104,10 @@ def save_csv(parking_data: DataFrame, file_name: str, data_dir_name: str, backup
     """
     # Save to a .csv the data generated
     if backup is False:
-        # When not saving a backup, we need to complete the file name with the number os .csv of the day
-        file_name = complete_file_name(file_name, data_dir_name)
+        # When not saving a backup, we need to complete the file name with the number of .csv of the day
+        file_name = complete_file_name(file_name, data_dir_path)
     # Create the file_path by appending the variables to the Path object with the "/" operator
-    file_path = working_dir_path / data_dir_name / file_name
+    file_path = data_dir_path / file_name
     parking_data.to_csv(file_path, sep=';', decimal=',')
     logging.info(f'{file_name} saved in {file_path}!')
 
@@ -118,26 +125,20 @@ def main():
     # Register the handler
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    # Make scheduler, the DELAY and the working_dir_path constants global
-    global s, DELAY, working_dir_path
+    # Make scheduler and the DELAY constants global
+    global s, DELAY
     # Define the delay (in seconds)
     DELAY = 15
-    # Define the current directory for the paths
-    working_dir_path = Path(os.path.dirname(os.path.realpath(__file__)))
 
     # Define logger basic configuration
-    logging.basicConfig(filename= (working_dir_path /'app.log'), filemode='w',
+    logging.basicConfig(filename= (LOGS_PATH /'app.log'), filemode='w',
                         format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
     # Constant definition
     today = datetime.now(pytz.timezone('Europe/Madrid'))
-    DIR_NAME = 'Data'
-    # Check if Data directory is created
-    try:
-        os.mkdir(working_dir_path / "Data")
-    except FileExistsError:
-        logging.info('Data directory already exist')
 
+    # Create folder where data will be stored 
+    UNMERGED_DATA_DIR_PATH.mkdir(parents=True, exist_ok=True)
 
     # The file names will be dataframe followed by the year, month, day and a number between 00 and 99. The last number
     # is for the case where exceptions happen during exectuions and more than one dataframe per day is needed
@@ -158,7 +159,7 @@ def main():
         # In case we have an exception of any kind, we want to save the retrieved data to a .csv file if the dataframe
         # is not going to be empty
         if len(df_parking_data.index) > 9: # save .csv only if we have meaningfull data
-            save_csv(df_parking_data, file_name, DIR_NAME)
+            save_csv(df_parking_data, file_name, UNMERGED_DATA_DIR_PATH)
         # If the exception is not a KeyBoardInterrup nor a SytemExit, that do not inherit from Exception,
         # program must continue and therefore we must call main again
         # e.__class__ is used to get the class of the exception
@@ -171,7 +172,7 @@ def main():
 
     # Just in case other exception happens, we ensure the data is saved in a backup file that we will rewrite every time
     finally:
-        save_csv(df_parking_data, 'last_run_backup.csv', DIR_NAME, backup=True)
+        save_csv(df_parking_data, 'last_run_backup.csv', UNMERGED_DATA_DIR_PATH, backup=True)
 
 if __name__ == '__main__':
     main()

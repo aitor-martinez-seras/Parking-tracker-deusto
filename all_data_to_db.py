@@ -5,7 +5,6 @@ from datetime import datetime
 import db
 from models import Entry, Base  # Base must be imported from models as it must live there
 from utils.constants import RAW_MERGED_DATA_DIR_PATH
-from config import DATABASE
 
 
 # La conexion a la base de datos funciona en el ordenador incluso aunque no esté encendido PgAdmin
@@ -42,7 +41,7 @@ def main():
         df = pd.read_csv(file, sep=';', index_col=0)
         # Name is the name of the DB inside the Postgres database
         df.to_sql(name=table_name, con=db.engine, schema=schema_name , index=False, if_exists='append')
-        print(f'File {file} succesfully uploaded to the database {DATABASE}, in the table {table_name} in the schema {schema_name}')
+        print(f'File {file} succesfully uploaded to the database {db.DATABASE}, in the table {table_name} in the schema {schema_name}')
 
 
 if __name__ == "__main__":
