@@ -25,12 +25,16 @@ def main():
             retrieved_csvs.append(df_new)
             print(f'Found .csv of day {today} -> {fpath.name}')
 
+    if len(retrieved_csvs) == 0:
+        print(f'No dataframes for the today ({today}) where found, exiting program')
+
     try:
         df = pd.concat(retrieved_csvs, ignore_index=True)
         new_file_path = RAW_MERGED_DATA_DIR_PATH / f'{searched_string}.csv'
         df.to_csv(new_file_path, sep=';')
         print(f'Succesfully saved {new_file_path}')
     except ValueError as e:
+        print(e)
         raise Exception(f'No dataframes for the today ({today}) where found, exiting program')
     
     # Send to DB

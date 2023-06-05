@@ -11,6 +11,8 @@ cron
 
 ## Instalation
 
+Run ````pip install -r requirements.txt```
+
 Rename the .env_example to .env and add the desired variable values
 
 Run the shell script run.sh
