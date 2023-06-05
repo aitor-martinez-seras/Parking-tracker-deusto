@@ -14,7 +14,7 @@ def main():
     RAW_MERGED_DATA_DIR_PATH.mkdir(exist_ok=True)
 
     today = date.today()
-    searched_string = f'dataframe_{today.year}_{today.month}_{today.day}'
+    searched_string = f'dataframe_{today.year}_{str(today.month).zfill(2)}_{str(today.day).zfill(2)}'
 
     retrieved_csvs = []
     for i, fpath in enumerate(UNMERGED_DATA_DIR_PATH.iterdir()):
