@@ -1,10 +1,11 @@
-import pandas as pd
-
+import os
 from datetime import datetime
+
+import pandas as pd
 
 import db
 from models import Entry, Base  # Base must be imported from models as it must live there
-from utils.constants import RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME
+from utils.constants import RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME, RAW
 
 
 # La conexion a la base de datos funciona en el ordenador incluso aunque no esté encendido PgAdmin
@@ -35,8 +36,12 @@ def main():
     # index is used to not upload the first column of indexes 
     # if_exist is used to handle the behaviour when the table you are inserting to already exist
 
-    for file in RAW_MERGED_DATA_DIR_PATH.iterdir():
-        df = pd.read_csv(file, sep=';', index_col=0)
+    # This sort is to ensure data is introduced from oldest to newest
+    data_files = os.listdir(RAW_MERGED_DATA_DIR_PATH)
+    data_files.sort()
+
+    for file in data_files:
+        df = pd.read_csv(RAW_MERGED_DATA_DIR_PATH / file, sep=';', index_col=0)
         # Name is the name of the DB inside the Postgres database
         df.to_sql(name=TABLE_NAME, con=db.engine, schema=SCHEMA_NAME, index=False, if_exists='append')
         print(f'File {file} succesfully uploaded to the database {db.DATABASE}, in the table {TABLE_NAME} in the schema {SCHEMA_NAME}')
