@@ -5,7 +5,7 @@ import pandas as pd
 
 import db
 from models import Entry, Base  # Base must be imported from models as it must live there
-from utils.constants import RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME, RAW
+from utils.constants import RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME
 
 
 # La conexion a la base de datos funciona en el ordenador incluso aunque no esté encendido PgAdmin
