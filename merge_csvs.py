@@ -23,7 +23,13 @@ for i, fname in enumerate(UNMERGED_DATA_DIR_PATH.iterdir()):
     if same_day_files == 0:
         
         same_day_files = 1
-        date = fname.name.split('_')[1:4]  # Does not give error if exceeds list size
+        fname_split = fname.name.split('_')
+        date = fname_split[1:4]  # Does not give error if exceeds list size
+        
+        # In case the lenght is not 5, it means it is not the file 
+        # we are looking for, so skip
+        if len(fname_split) != 5:
+            continue
 
         # Search for files retrieved in the same day
         for next_fname in data_files[i+1:]:
