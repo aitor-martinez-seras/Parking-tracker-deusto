@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 # Scheme: "postgres+psycopg2://<USERNAME>:<PASSWORD>@<IP_ADDRESS>:<PORT>/<DATABASE_NAME>"
 
 load_dotenv(DOTENV_PATH)
+HOST = os.environ['POSTGRES_CONTAINER_NAME'] 
 USERNAME = os.environ['POSTGRES_USER']
 PASSWORD = os.environ['POSTGRES_PASSWORD']
 PORT = os.environ['POSTGRES_PORT']
@@ -22,7 +23,7 @@ DATABASE = os.environ['POSTGRES_DB']
 uri = URL.create(
     drivername="postgresql+psycopg2",
     username=USERNAME,
-    host="localhost",
+    host='localhost',
     port=PORT,
     database=DATABASE,
     password=PASSWORD,

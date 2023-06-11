@@ -14,6 +14,7 @@ DOTENV_PATH = WORKING_DIR_PATH / 'docker/.env'
 
 # DB
 TABLE_NAME = 'raw'
+SCHEMA_NAME = 'public' 
 
 # Logs
 LOGS_PATH = WORKING_DIR_PATH / 'logs'

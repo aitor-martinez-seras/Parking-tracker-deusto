@@ -4,7 +4,7 @@ from datetime import datetime
 
 import db
 from models import Entry, Base  # Base must be imported from models as it must live there
-from utils.constants import RAW_MERGED_DATA_DIR_PATH
+from utils.constants import RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME
 
 
 # La conexion a la base de datos funciona en el ordenador incluso aunque no esté encendido PgAdmin
@@ -34,14 +34,12 @@ def main():
     # schema is needed only in the cases where it is defined in the DB (in Postgres is defined)
     # index is used to not upload the first column of indexes 
     # if_exist is used to handle the behaviour when the table you are inserting to already exist
-    
-    table_name = 'raw'
-    schema_name = 'public'  # By default in Postgress
+
     for file in RAW_MERGED_DATA_DIR_PATH.iterdir():
         df = pd.read_csv(file, sep=';', index_col=0)
         # Name is the name of the DB inside the Postgres database
-        df.to_sql(name=table_name, con=db.engine, schema=schema_name , index=False, if_exists='append')
-        print(f'File {file} succesfully uploaded to the database {db.DATABASE}, in the table {table_name} in the schema {schema_name}')
+        df.to_sql(name=TABLE_NAME, con=db.engine, schema=SCHEMA_NAME, index=False, if_exists='append')
+        print(f'File {file} succesfully uploaded to the database {db.DATABASE}, in the table {TABLE_NAME} in the schema {SCHEMA_NAME}')
 
 
 if __name__ == "__main__":

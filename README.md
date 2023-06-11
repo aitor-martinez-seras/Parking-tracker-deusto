@@ -11,6 +11,8 @@ cron
 
 ## Instalation
 
+Run ````pip install -r requirements.txt```
+
 Rename the .env_example to .env and add the desired variable values
 
 Run the shell script run.sh
@@ -27,3 +29,11 @@ Go to the port 5050 to access PgAdmin and add the server:
     Port: 5432
     Username: $POSTGRES_USER
     Password: $POSTGRES_PASSWORD
+
+Add to crontab using ````crontab -e```` the following lines:
+````nano
+30 6 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/data_retrieval_to_csv.py
+30 20 * * * /usr/bin/pkill -f "/path-to-code-folder/venv/bin/python3 /path-to-code-folder/data_retrieval_to_csv.py"
+32 20 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/merge_today_csvs.py
+35 20 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/today_csv_to_db.py
+````
