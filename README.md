@@ -34,6 +34,5 @@ Add to crontab using ````crontab -e```` the following lines:
 ````nano
 30 6 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/data_retrieval_to_csv.py
 30 20 * * * /usr/bin/pkill -f "/path-to-code-folder/venv/bin/python3 /path-to-code-folder/data_retrieval_to_csv.py"
-32 20 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/merge_today_csvs.py
-35 20 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/today_csv_to_db.py
+32 20 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/merge_today_csv_and_send_to_db.py
 ````
