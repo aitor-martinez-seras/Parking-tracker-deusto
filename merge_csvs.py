@@ -15,7 +15,7 @@ same_day_files = 1
 
 separator = '_'
 
-for i, fname in enumerate(UNMERGED_DATA_DIR_PATH.iterdir()):
+for i, fname in enumerate(sorted(UNMERGED_DATA_DIR_PATH.iterdir())):
     
     same_day_files -= 1
 
@@ -29,6 +29,7 @@ for i, fname in enumerate(UNMERGED_DATA_DIR_PATH.iterdir()):
         # In case the lenght is not 5, it means it is not the file 
         # we are looking for, so skip
         if len(fname_split) != 5:
+            print(f'Skipped file {fname}')
             continue
 
         # Search for files retrieved in the same day

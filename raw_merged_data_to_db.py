@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+import argparse
+from dataclasses import dataclass
 
 import pandas as pd
 
@@ -7,6 +9,10 @@ import db
 from models import Entry, Base  # Base must be imported from models as it must live there
 from utils.constants import RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME
 
+
+@dataclass
+class MyProgramArgs:
+    if_exist_option: str
 
 # La conexion a la base de datos funciona en el ordenador incluso aunque no esté encendido PgAdmin
 def add_one_entry():
@@ -24,7 +30,18 @@ def add_one_entry():
         s.add(entry)
 
 
-def main():
+def argument_parser():
+    parser = argparse.ArgumentParser(
+        prog='Send raw merged data to DB',
+        description='Takes the csvs inside Data/raw_merged and sends it to the DB',
+    )
+    parser.add_argument('-o', '--if_exist_option', default='append', choices=['append', 'replace'],
+                        help='Option to upload data to DB. append: Insert new values to the existing table,' / 
+                        'replace: Drop the table before inserting new values.')
+    return parser
+
+
+def main(args: MyProgramArgs):
     # This statement creates this table in the database if it does not exist. In case it exist,
     # it does NOT overwrite it
     # Base.metadata.create_all(db.engine)
@@ -43,10 +60,10 @@ def main():
     for file in data_files:
         df = pd.read_csv(RAW_MERGED_DATA_DIR_PATH / file, sep=';', index_col=0)
         # Name is the name of the DB inside the Postgres database
-        df.to_sql(name=TABLE_NAME, con=db.engine, schema=SCHEMA_NAME, index=False, if_exists='append')
+        df.to_sql(name=TABLE_NAME, con=db.engine, schema=SCHEMA_NAME, index=False, if_exists=args.if_exist_option)
         print(f'File {file} succesfully uploaded to the database {db.DATABASE}, in the table {TABLE_NAME} in the schema {SCHEMA_NAME}')
 
 
 if __name__ == "__main__":
     db.recreate_database(Base)
-    main()
+    main(MyProgramArgs(**vars(argument_parser().parse_args())))
