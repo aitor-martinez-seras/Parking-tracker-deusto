@@ -4,13 +4,17 @@ from pathlib import Path
 # The working directory must always be the parent of utils
 WORKING_DIR_PATH = Path(os.path.dirname(os.path.realpath(__file__))).parent
 
+# Config
+CONFIG_PATH = WORKING_DIR_PATH / 'config'
+DOTENV_PATH = CONFIG_PATH / '.env'
+
 # Data
 DATA_DIR_PATH = WORKING_DIR_PATH / 'Data'
 UNMERGED_DATA_DIR_PATH = DATA_DIR_PATH / 'raw_not_merged'
 RAW_MERGED_DATA_DIR_PATH = DATA_DIR_PATH / 'raw_merged'
 
 # Docker
-DOTENV_PATH = WORKING_DIR_PATH / 'docker/.env'
+DOCKER_DOTENV_PATH = WORKING_DIR_PATH / 'docker/.env'
 
 # DB
 TABLE_NAME = 'raw'
