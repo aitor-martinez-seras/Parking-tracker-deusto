@@ -1,7 +1,15 @@
 import os
 from pathlib import Path
 
-# The working directory must always be the parent of utils
+
+#### DF constants ####
+
+NEW_COLUMNS = ['date', 'time', 'general_parking', 'dbs_parking']
+
+
+#### PATHS ####
+
+# The working directory MUST ALWAYS be the parent of utils
 WORKING_DIR_PATH = Path(os.path.dirname(os.path.realpath(__file__))).parent
 
 # Config

@@ -3,14 +3,13 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH
+from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH, NEW_COLUMNS
 from utils.time_series import check_monotonic_increasing_dates
 
 
 # File names pattern: dataframe_YYYY_MM_DD_XX.csv where XX is a number from
 # 00 to 99 representing the order of the dataframes in that day 
 
-new_columns = ['date', 'time', 'general_parking', 'dbs_parking']
 RAW_MERGED_DATA_DIR_PATH.mkdir(exist_ok=True)
 
 data_files = list(sorted(UNMERGED_DATA_DIR_PATH.iterdir()))
@@ -47,10 +46,10 @@ for i, fname in enumerate(data_files):
 
         same_day_file_paths = data_files[i:i+same_day_files]
 
-        df = pd.DataFrame(columns=new_columns)
+        df = pd.DataFrame(columns=NEW_COLUMNS)
         for csv_file in same_day_file_paths:
             df_new = pd.read_csv(csv_file, sep=';', index_col=0)
-            df_new.columns = new_columns
+            df_new.columns = NEW_COLUMNS
             df = pd.concat([df, df_new], ignore_index=True)
 
         monotonic_increase = check_monotonic_increasing_dates(

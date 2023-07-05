@@ -5,7 +5,7 @@ import pandas as pd
 import pytz
 
 import db
-from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME, LOGS_PATH
+from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME, LOGS_PATH, NEW_COLUMNS
 from utils.time_series import check_monotonic_increasing_dates
 
 
@@ -20,7 +20,6 @@ def main():
     logging.basicConfig(filename= (LOGS_PATH /f'{str(today).replace("-", "_")}_sending_raw_merged_csv.log'), filemode='w',
                         format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-    new_columns = ['date', 'time', 'general_parking', 'dbs_parking']
     RAW_MERGED_DATA_DIR_PATH.mkdir(exist_ok=True)
     initial_time_for_monotonic_increase = datetime.strptime('06:00:00', '%H:%M:%S')
 
@@ -28,9 +27,9 @@ def main():
     # retreived_csvs_order = []
     for i, fpath in enumerate(sorted(UNMERGED_DATA_DIR_PATH.iterdir())):
         if  fpath.name.find(searched_string) >= 0:
-            df = pd.DataFrame(columns=new_columns)
+            df = pd.DataFrame(columns=NEW_COLUMNS)
             df_new = pd.read_csv(fpath, sep=';', index_col=0)
-            df_new.columns = new_columns
+            df_new.columns = NEW_COLUMNS
             retrieved_csvs.append(df_new)
             # retreived_csvs_order.append(int(fpath.name.split('_')[4].split('.')[0]))
             logging.info(f'Found .csv of day {today} -> {fpath.name}')

@@ -36,3 +36,7 @@ Add to crontab using ````crontab -e```` the following lines:
 30 20 * * * /usr/bin/pkill -f "/path-to-code-folder/venv/bin/python3 /path-to-code-folder/data_retrieval_to_csv.py"
 32 20 * * * /path-to-code-folder/venv/bin/python3 /path-to-code-folder/merge_today_csv_and_send_to_db.py
 ````
+
+## Modification
+
+They way paths are programmed, the working directory MUST ALWAYS be the parent of utils. If you wish to change this behavior, go to constants and modify the working directory selection
