@@ -4,24 +4,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH
-
-
-def check_monotonic_increasing_dates(df, reference):
-    t_before = datetime.strptime('06:00:00', '%H:%M:%S')
-    for t in df['time']:
-        # Check if the diff is negative
-        try:
-            t = datetime.strptime(t, '%H:%M:%S.%f')
-        except ValueError:
-            t = datetime.strptime(t, '%H:%M:%S')
-
-        if t - t_before < reference:
-            return False
-        
-        # Update t_before value
-        t_before = t
-
-    return True
+from utils.time_series import check_monotonic_increasing_dates
 
 
 # File names pattern: dataframe_YYYY_MM_DD_XX.csv where XX is a number from
@@ -35,7 +18,7 @@ same_day_files = 1
 
 separator = '_'
 
-reference_timedelta = timedelta(seconds=0)
+initial_time_for_monotonic_increase = datetime.strptime('06:00:00', '%H:%M:%S')
 
 for i, fname in enumerate(data_files):
     
@@ -70,7 +53,10 @@ for i, fname in enumerate(data_files):
             df_new.columns = new_columns
             df = pd.concat([df, df_new], ignore_index=True)
 
-        monotonic_increase = check_monotonic_increasing_dates(df, reference=reference_timedelta)
+        monotonic_increase = check_monotonic_increasing_dates(
+            df['time'],
+            t_initial=initial_time_for_monotonic_increase
+        )
 
         if monotonic_increase is False:
             print(f'Found not a monotonic increase in {fname}')
