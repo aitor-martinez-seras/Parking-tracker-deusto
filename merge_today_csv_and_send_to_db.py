@@ -1,20 +1,26 @@
-from datetime import date 
+from datetime import datetime
+import logging
 
 import pandas as pd
+import pytz
 
 import db
-from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME
+from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH, TABLE_NAME, SCHEMA_NAME, LOGS_PATH
 
 
 def main():
     # File names pattern: dataframe_YYYY_MM_DD_XX.csv where XX is a number from
-    # 00 to 99 representing the order of the dataframes in that day 
+    # 00 to 99 representing the order of the dataframes in that day
+
+    today = datetime.now(pytz.timezone('Europe/Madrid'))
+    searched_string = f'dataframe_{today.year}_{str(today.month).zfill(2)}_{str(today.day).zfill(2)}'
+
+    # Define logger basic configuration
+    logging.basicConfig(filename= (LOGS_PATH /f'{str(today).replace("-", "_")}_sending_raw_merged_csv.log'), filemode='w',
+                        format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
     new_columns = ['date', 'time', 'general_parking', 'dbs_parking']
     RAW_MERGED_DATA_DIR_PATH.mkdir(exist_ok=True)
-
-    today = date.today()
-    searched_string = f'dataframe_{today.year}_{str(today.month).zfill(2)}_{str(today.day).zfill(2)}'
 
     retrieved_csvs = []
     # retreived_csvs_order = []

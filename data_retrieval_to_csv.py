@@ -130,12 +130,12 @@ def main():
     # Define the delay (in seconds)
     DELAY = 15
 
-    # Define logger basic configuration
-    logging.basicConfig(filename= (LOGS_PATH /'app.log'), filemode='w',
-                        format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-
     # Constant definition
     today = datetime.now(pytz.timezone('Europe/Madrid'))
+
+    # Define logger basic configuration
+    logging.basicConfig(filename= (LOGS_PATH / f'{str(today.date()).replace("-", "_")}_app.log'), filemode='w',
+                        format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
     # Create folder where data will be stored 
     UNMERGED_DATA_DIR_PATH.mkdir(parents=True, exist_ok=True)
