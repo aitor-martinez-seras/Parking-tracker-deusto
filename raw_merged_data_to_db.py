@@ -53,14 +53,23 @@ def main(args: MyProgramArgs):
     # index is used to not upload the first column of indexes 
     # if_exist is used to handle the behaviour when the table you are inserting to already exist
 
+    if args.if_exist_option == 'append':
+        print(f'The .csv files available in raw_merged folder will be appended to the table in the SQL database')
+    else:
+        print(f'The table in the SQL database will be DROPPED and REPLACED by the .csv files available in raw_merged folder')
+
     # This sort is to ensure data is introduced from oldest to newest
     data_files = os.listdir(RAW_MERGED_DATA_DIR_PATH)
     data_files.sort()
 
-    for file in data_files:
+    # First item removes previous data or just appends info
+    df = pd.read_csv(RAW_MERGED_DATA_DIR_PATH / data_files[0], sep=';', index_col=0)
+    df.to_sql(name=TABLE_NAME, con=db.engine, schema=SCHEMA_NAME, index=False, if_exists=args.if_exist_option)
+
+    for file in data_files[1:]:
         df = pd.read_csv(RAW_MERGED_DATA_DIR_PATH / file, sep=';', index_col=0)
         # Name is the name of the DB inside the Postgres database
-        df.to_sql(name=TABLE_NAME, con=db.engine, schema=SCHEMA_NAME, index=False, if_exists=args.if_exist_option)
+        df.to_sql(name=TABLE_NAME, con=db.engine, schema=SCHEMA_NAME, index=False, if_exists='append')
         print(f'File {file} succesfully uploaded to the database {db.DATABASE}, in the table {TABLE_NAME} in the schema {SCHEMA_NAME}')
 
 
