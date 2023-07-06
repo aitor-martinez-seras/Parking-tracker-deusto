@@ -36,7 +36,7 @@ def argument_parser():
         description='Takes the csvs inside Data/raw_merged and sends it to the DB',
     )
     parser.add_argument('-o', '--if_exist_option', default='append', choices=['append', 'replace'],
-                        help='Option to upload data to DB. append: Insert new values to the existing table,' / 
+                        help='Option to upload data to DB. append: Insert new values to the existing table,' \
                         'replace: Drop the table before inserting new values.')
     return parser
 
