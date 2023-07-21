@@ -71,7 +71,7 @@ for i, fname in enumerate(data_files):
             print(f'{[x.name for x in same_day_file_paths]} correct!')
 
         if not all_rows_from_current_date:
-            print('Failure')
+            print(f'Not all rows of the csv of the day {current_date} are from the same date')
             raise ValueError()
         else:
             print('All dates correct')
