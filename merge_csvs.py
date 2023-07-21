@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from utils.constants import UNMERGED_DATA_DIR_PATH, RAW_MERGED_DATA_DIR_PATH, NEW_COLUMNS
-from utils.time_series import check_monotonic_increasing_dates
+from utils.time_series import check_monotonic_increasing_dates, check_all_rows_are_from_same_date
 
 
 # File names pattern: dataframe_YYYY_MM_DD_XX.csv where XX is a number from
@@ -28,7 +28,7 @@ for i, fname in enumerate(data_files):
         
         same_day_files = 1
         fname_split = fname.name.split('_')
-        date = fname_split[1:4]  # Does not give error if exceeds list size
+        current_date = fname_split[1:4]  # Does not give error if exceeds list size
         
         # In case the lenght is not 5, it means it is not the file 
         # we are looking for, so skip
@@ -39,7 +39,7 @@ for i, fname in enumerate(data_files):
         # Search for files retrieved in the same day
         for next_fname in data_files[i+1:]:
             next_date = next_fname.name.split('_')[1:4]
-            if next_date == date:
+            if next_date == current_date:
                 same_day_files += 1
             else:
                 break
@@ -57,6 +57,11 @@ for i, fname in enumerate(data_files):
             t_initial=initial_time_for_monotonic_increase
         )
 
+        all_rows_from_current_date = check_all_rows_are_from_same_date(
+            df['date'],
+            searched_date=f'{current_date[0]}-{current_date[1]}-{current_date[2]}'
+        )
+
         if monotonic_increase is False:
             print(f'Found not a monotonic increase in {fname}')
             print(f'The order of the files used is {same_day_file_paths}')
@@ -64,6 +69,12 @@ for i, fname in enumerate(data_files):
             raise ValueError('Error when merging csvs, exiting program!')
         else:
             print(f'{[x.name for x in same_day_file_paths]} correct!')
+
+        if all_rows_from_current_date:
+            print('Failure')
+            raise ValueError()
+        else:
+            print('All dates correct')
         
         if fname.name.split('_')[0] == 'dataframe':
             new_name = fname.name.split('_')[:4]
