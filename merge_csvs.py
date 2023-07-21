@@ -70,7 +70,7 @@ for i, fname in enumerate(data_files):
         else:
             print(f'{[x.name for x in same_day_file_paths]} correct!')
 
-        if all_rows_from_current_date:
+        if not all_rows_from_current_date:
             print('Failure')
             raise ValueError()
         else:
