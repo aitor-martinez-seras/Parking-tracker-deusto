@@ -11,9 +11,9 @@ cron
 
 ## Instalation
 
-1. Run ````pip install -r requirements.txt```
+1. Run ```pip install -r requirements.txt```
 
-2. Rename the ```.env_example``` to ```.env``` in both ```docker``` and ```config``` directories and add the desired variable values. The HOST in the ```config/.env``` refers to the machine where the data is stored with respect to the machine the code is executed from. For exmaple, uou may have the docker running on a RPi on the network (e.g. 192.168.1.17) and want to access data from your local machine, so in make ```HOST=192.168.1.17```
+2. Rename the ```.env_example``` to ```.env``` in both ```docker``` and ```config``` directories and add the desired variable values. The HOST in the ```config/.env``` refers to the machine where the data is stored with respect to the machine the code is executed from. For example, you may have the docker running on a RPi on the network (e.g. 192.168.1.17) and want to access data from your local machine, so in ```.env``` make ```HOST=192.168.1.17```
 
 3. Run the shell script run.sh
 
