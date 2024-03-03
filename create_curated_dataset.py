@@ -19,7 +19,7 @@ def argument_parser():
     Argument parser
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=str, default="csvs", choices=["database", "csvs"],
+    parser.add_argument("--source", type=str, choices=["database", "csvs"], required=True,
         help="Source of the data. If 'database' goes to the created database to look for a table wih all the data.' \
             'If 'csvs' goes to the raw_merged folder to look for the .csvs with the data")
     return parser.parse_args()
