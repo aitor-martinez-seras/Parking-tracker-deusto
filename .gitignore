@@ -6,6 +6,7 @@ config.py
 pruebas.ipynb
 **/.env
 .qsyncclient
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
